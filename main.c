@@ -22,7 +22,7 @@ switch (c)
 case 'h':
 printf("-s or --server : it start as a server \n");
 printf("-c or --client : it start as a client and need ip address \n");
-
+printf("---fengtuo58@qq.com");
 break;
 case 's':
 printf("server starting\n");

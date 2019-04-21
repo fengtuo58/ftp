@@ -1,0 +1,7 @@
+./program -h 
+./program --help
+./program -c ip
+./program -s 
+
+
+

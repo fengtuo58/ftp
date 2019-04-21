@@ -1,19 +1,56 @@
 #include   "./lib/unp.h"
 #include   "sum.h"
 //#include   "server.h"
+
+char Serverbuffer[MAXLINE] = {0}; 
+char * dealCommand(int sockfd, char* command)
+{
+    if (NULL != strstr(command, "ls")) {
+      FILE * fp;
+      char buffer[MAXLINE] = {0};
+      char SendBuffer[MAXLINE] = {0};
+      bzero(SendBuffer, sizeof(SendBuffer));
+      if ((fp=popen("ls","r")) == NULL) {
+	return NULL;
+      }
+      int i =0;
+      while(fgets(buffer,sizeof(buffer),fp) != NULL) {
+	strcpy(&(SendBuffer[i]), buffer);
+	i = i + strlen(buffer);
+	if (i >=  MAXLINE)
+	  return NULL;
+      }
+      Writen(sockfd, SendBuffer, sizeof(SendBuffer));
+      pclose(fp);
+  
+    } else if (NULL != strstr(command, "get")){
+
+    }
+}
+
 void
 ServerDeal(int sockfd)
 {
   ssize_t		n;
   struct args		args;
   struct result	result;
+  long length = 0;
 
   for ( ; ; ) {
-    if ( (n = Readn(sockfd, &args, sizeof(args))) == 0)
-      return;		/* connection closed by other end */
+    bzero(Serverbuffer, sizeof(Serverbuffer));
+    if ( (n = Readn(sockfd, Serverbuffer, sizeof(Serverbuffer))) == 0) //找个阻塞性套接字
+	    return;		/* connection closed by other end */
+    
+	  char* command = (char*)calloc(MAXLINE-4, sizeof(char));
+	  if (command != 0) {
+	    length = *(unsigned*)Serverbuffer;
+      
+	    printf("command:%s", Serverbuffer+3);
+	    //dealCommand
+	    dealCommand(sockfd, Serverbuffer + 3);
 
-    result.sum = args.arg1 + args.arg2;
-    Writen(sockfd, &result, sizeof(result));
+	    free(command);
+	  }
   }
 }
 

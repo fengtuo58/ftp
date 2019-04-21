@@ -5,21 +5,24 @@ void
 cliDeal(FILE *fp, int sockfd)
 {
   char			sendline[MAXLINE];
+  char			inputBuffer[MAXLINE - 4];
   struct args		args;
   struct result	result;
+  char ouputBuffer[MAXLINE];
+  bzero(ouputBuffer, sizeof(ouputBuffer));
+  unsigned length = 0;
+  while (Fgets(inputBuffer, MAXLINE, fp) != NULL) {
+    length = strlen(inputBuffer);
+    char* Phead = sendline;
+    *((unsigned*)Phead) = length;
+    strcpy(sendline+length, inputBuffer);
+    Writen(sockfd, sendline, sizeof(sendline));
 
-  while (Fgets(sendline, MAXLINE, fp) != NULL) {
-
-    if (sscanf(sendline, "%ld%s", &args.arg1, &args.arg2) != 2) {
-      printf("invalid input: %s", sendline);
-	continue;
-    }
-    Writen(sockfd, &args, sizeof(args));
-
-    if (Readn(sockfd, &result, sizeof(result)) == 0)
+    if (Readn(sockfd, ouputBuffer, sizeof(ouputBuffer)) == 0)
       err_quit("str_cli: server terminated prematurely");
 
-    printf("%ld\n", result.sum);
+    printf("%s\n", ouputBuffer);
+    bzero( ouputBuffer, sizeof(ouputBuffer));
   }
 }
 
