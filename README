@@ -1,3 +1,6 @@
+---INSTALL
+make
+--RUN
 ./program -h 
 ./program --help
 ./program -c ip

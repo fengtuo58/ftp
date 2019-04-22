@@ -1,6 +1,9 @@
 #include	"./lib/unp.h"
 #include	"sum.h"
 #include    "client.h"
+
+
+
 void
 cliDeal(FILE *fp, int sockfd)
 {
@@ -10,18 +13,37 @@ cliDeal(FILE *fp, int sockfd)
   struct result	result;
   char ouputBuffer[MAXLINE];
   bzero(ouputBuffer, sizeof(ouputBuffer));
+
   unsigned length = 0;
   while (Fgets(inputBuffer, MAXLINE, fp) != NULL) {
+    bzero(sendline, sizeof(sendline));
     length = strlen(inputBuffer);
     char* Phead = sendline;
-    *((unsigned*)Phead) = length;
-    strcpy(sendline+length, inputBuffer);
+    char* Pfirst = NULL;
+    *((unsigned*)Phead) = htons(length);
+    strcpy(sendline+4, inputBuffer);
     Writen(sockfd, sendline, sizeof(sendline));
-
+    //printf("send :%s", inputBuffer);
     if (Readn(sockfd, ouputBuffer, sizeof(ouputBuffer)) == 0)
-      err_quit("str_cli: server terminated prematurely");
-
-    printf("%s\n", ouputBuffer);
+	     err_quit("str_cli: server terminated prematurely");
+    if (NULL != (strstr(sendline+4, "ls")))
+      printf("%s\n", ouputBuffer);
+    else
+      {
+	if (NULL != (Pfirst = strstr(sendline+4, "get"))) {
+	  //printf("MMM%s", Pfirst+4);
+	  //	  char * pfile1 = trim(Pfirst+4);
+	  //	  printf("HHH%s", pfile1);
+	  FILE *fp1 = NULL;
+	  if ((fp1 = fopen(Pfirst+4, "w")) != NULL) {
+	    int write_length = fwrite(ouputBuffer, sizeof(char), sizeof(ouputBuffer), fp1);
+	    if (write_length < sizeof(ouputBuffer)) {  
+	      printf("File:\t%s Write Failed!\n", Pfirst+4);  
+	      break;  
+	    }  
+	  }
+	}
+      }
     bzero( ouputBuffer, sizeof(ouputBuffer));
   }
 }

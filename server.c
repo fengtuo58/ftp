@@ -2,30 +2,85 @@
 #include   "sum.h"
 //#include   "server.h"
 
-char Serverbuffer[MAXLINE] = {0}; 
+char Serverbuffer[MAXLINE] = {0};
+char TempBUffer[MAXLINE] = {0};
+int substr(char dst[],char src[],int start,int len)
+{
+  char* p = src + start;   //定义指针变量指向需要提取的字符的地址
+  int n = strlen(p);       //求字符串长度
+  int i = 0;
+  if(n < len)
+    {
+      len = n;
+    }
+  while(len != 0)
+    {
+      dst[i] = src[i+start];
+      len --;
+      i++;
+    }                        //复制字符串到dst中
+  dst[i] = '\0';
+  printf("dst:%s", dst);
+  return 0;
+}
+
+char *trim(char *str)
+{
+  char *p = str;
+  char *p1;
+  if(p)
+    {
+      p1 = p + strlen(str) - 1;
+      while(*p && isspace(*p)) p++;
+      while(p1 > p && isspace(*p1)) *p1-- = '\0';
+    }
+  return p;
+}
+
 char * dealCommand(int sockfd, char* command)
 {
-    if (NULL != strstr(command, "ls")) {
-      FILE * fp;
-      char buffer[MAXLINE] = {0};
-      char SendBuffer[MAXLINE] = {0};
-      bzero(SendBuffer, sizeof(SendBuffer));
-      if ((fp=popen("ls","r")) == NULL) {
-	return NULL;
-      }
-      int i =0;
-      while(fgets(buffer,sizeof(buffer),fp) != NULL) {
-	strcpy(&(SendBuffer[i]), buffer);
-	i = i + strlen(buffer);
-	if (i >=  MAXLINE)
-	  return NULL;
-      }
-      Writen(sockfd, SendBuffer, sizeof(SendBuffer));
-      pclose(fp);
+  char * pfirstGet = NULL;
+  char buffer[MAXLINE] = {0};
+  char SendBuffer[MAXLINE] = {0};
+  FILE * fp = NULL;
+  bzero(SendBuffer, sizeof(SendBuffer));
+   if (NULL != strstr(command, "ls")) {
+     if ((fp=popen("ls","r")) == NULL) {
+       return NULL;
+     }
+     int i =0;
+     while(fgets(buffer,sizeof(buffer),fp) != NULL) {
+       strcpy(&(SendBuffer[i]), buffer);
+       i = i + strlen(buffer);
+       if (i >=  MAXLINE)
+	 return NULL;
+     }
+     
+     Writen(sockfd, SendBuffer, sizeof(SendBuffer));
+     pclose(fp);
   
-    } else if (NULL != strstr(command, "get")){
+   } else if (NULL != (pfirstGet = strstr(command, "get"))){
+     //     char *pZeroGet = strstr(command, "0");
+     char * pfile = trim(pfirstGet+4);
+     FILE *fp1 = fopen(pfile, "r");
+     
+     if (fp1 == NULL) {
+       printf("no such file:%s Can Not Open To Write!\n", pfile);  
+       exit(1);  
+     }
+ 
+     int i =0;
+     while(fgets(buffer,sizeof(buffer),fp1) != NULL) {
+       strcpy(&(SendBuffer[i]), buffer);
+       i = i + strlen(buffer);
+       if (i >=  MAXLINE)
+	 return NULL;
+       bzero(buffer, sizeof(buffer));
+     }
 
-    }
+     Writen(sockfd, SendBuffer, sizeof(SendBuffer));
+     printf("%s", Serverbuffer);
+   }
 }
 
 void
@@ -39,18 +94,22 @@ ServerDeal(int sockfd)
   for ( ; ; ) {
     bzero(Serverbuffer, sizeof(Serverbuffer));
     if ( (n = Readn(sockfd, Serverbuffer, sizeof(Serverbuffer))) == 0) //找个阻塞性套接字
-	    return;		/* connection closed by other end */
-    
-	  char* command = (char*)calloc(MAXLINE-4, sizeof(char));
-	  if (command != 0) {
-	    length = *(unsigned*)Serverbuffer;
-      
-	    printf("command:%s", Serverbuffer+3);
-	    //dealCommand
-	    dealCommand(sockfd, Serverbuffer + 3);
+      return;		/* connection closed by other end */
+    char* command = (char*)calloc(MAXLINE-4, sizeof(char));
+    if (command != 0) {
+      length = *(unsigned*)Serverbuffer;
+      printf("length:%d", ntohs(length));
 
-	    free(command);
-	  }
+      //     substr(TempBUffer, Serverbuffer + 4, 0, length);
+      //      printf("command:%s", Serverbuffer+3);
+      //  for (int i = 0; i < length; i++)
+      //      printf('%c:', *(Serverbuffer+3+i));
+      //dealCommand
+      printf("%s", TempBUffer);
+      dealCommand(sockfd, Serverbuffer+4);
+
+      free(command);
+    }
   }
 }
 
